@@ -5,40 +5,130 @@
 <title>Reading List</title>
 <script type="text/javascript" src="jquery-1.4.2.min.js"></script>
 <script type="text/javascript">
-	var classcode = Widget.preferences.getItem('courseid');
-	function getReadingList(){
-			//e.preventDefault();
-			
-			var url = 'http://classes.myplace.strath.ac.uk/blocks/liblinks/ajax.php?classcode=' + classcode ;//$('#classcode').val();
-			if(Widget && typeof Widget.proxify === 'function'){
-				url = Widget.proxify(url);
-			};
-			//$.getJSON('fakedata.json', function(data){
-			$.getJSON(url, function(data){
-				$('#results li').remove();
-				if(data.readingList.length === 0){
-					$('#results ul').append('<li><i>No items found</i></li>');
-				};
-				$.each(data.readingList, function(i, item){
-					$('#results ul').append('<li><a href="' + item.link + '">' + item.title + '</a></li>');
-				});
-				
-			});
+
+var classcode = Widget.preferences.getItem('idnumber');
+
+
+function getAjaxUrl(type){
+	if(typeof type == 'undefined') {
+		type ='readinglist'
+	};
+	var url = 'http://classes.myplace.strath.ac.uk/blocks/liblinks/ajax.php?classcode=' + classcode + '&type=' + type ;
+	if(Widget && typeof Widget.proxify === 'function'){
+		url = Widget.proxify(url);
+	};
+	return url;
+}
+$(document).ready(function(){
+
+	if (typeof classcode != 'undefined') {
+		$('#searchform').hide();
+	} else {
+		$('#links').hide();
 	}
-	$(document).ready(function(){
-		
-		$('form').submit(function(e) {
-			e.preventDefault();
-			getReadingList();
-		});
-		if (classcode != undefined) {
-			$('#searchform').hide();
-			getReadingList();
-		}
-		else {
-			
-		}
+
+	$('#searchform').submit(function(e) {
+		e.preventDefault();
+		classcode = $('#classcode').val();
+		$('#links').show();
 	});
+
+    $('#block_liblinks_reading_list_link').click(function(){
+        if($('#block_liblinks_reading_list_content').length == 0) {
+        	$.getJSON(getAjaxUrl('readinglist'), block_liblinks_fn.getReadingList);
+        	$('#block_liblinks_reading_list').append('<div id="loading-image-container"><img class="loading-image" style="display: none;" src="images/ajax-loader.gif" /></div>')
+    		.find('.loading-image').delay(500).fadeIn();
+        }
+        $('#block_liblinks_reading_list').toggle(); 
+        return false;
+    });
+    
+    $('#block_liblinks_exam_papers_link').click(function(){
+        if($('#block_liblinks_exam_papers_content').length == 0) {
+            $.getJSON(getAjaxUrl('exampapers'), block_liblinks_fn.getExamPapers);
+            $('#block_liblinks_exam_papers').append('<div id="loading-image-container"><img class="loading-image" style="display: none;" src="images/ajax-loader.gif" /></div>')
+        	.find('.loading-image').delay(500).fadeIn();
+        }
+        $('#block_liblinks_exam_papers').toggle();
+		return false;
+    });
+    
+    $('#block_liblinks_scans_link').click(function(){
+        if($('#block_liblinks_scans_content').length == 0) {
+            $.getJSON(getAjaxUrl('scans'), block_liblinks_fn.getScans);
+            $('#block_liblinks_scans').append('<div id="loading-image-container"><img class="loading-image" style="display: none;" src="images/ajax-loader.gif" /></div>')
+        	.find('.loading-image').delay(500).fadeIn();
+        }
+        $('#block_liblinks_scans').toggle();
+		return false;
+    });
+    
+
+});
+
+block_liblinks_fn = {
+    "getReadingList": function(data) {
+        var html = '<ul>';
+        if(data.errors){
+            html += '<li><a href="#" target="_blank">See library catalogue</a></li>';
+        } else if(data.readingList.length == 0) {
+            html += '<li><i>No books found</i></li>';
+        }
+        for(var i=0; i<data.readingList.length; i++) {
+            var item = data.readingList[i];
+            if(item.link) {
+                html += "<li><a href=\"" + item.link + "\" target=\"_blank\">" + item.title + "</a></li>";
+            } else {
+                html += "<li>" + item.title + "</li>";
+            }
+        }
+        html += '</ul>';
+        $('#block_liblinks_reading_list').append("<div id='block_liblinks_reading_list_content'>" +
+        html + "</div>");
+        $('#block_liblinks_reading_list #loading-image-container').remove();
+    },
+    
+    "getExamPapers": function(data) {
+        var html = '<ul>';
+        if(data.examPapers.length == 0) {
+            html += '<li><i>No exam papers found</i></li>';
+        }
+        for(var i=0; i<data.examPapers.length; i++) {
+            var item = data.examPapers[i];
+            if(item.link) {
+                html += "<li><a href=\"" + item.link + "\" target=\"_blank\">" + item.title + "</a></li>";
+            } else {
+                html += "<li>" + item.title + "</li>";
+            }
+        }
+        html += '</ul>';
+        $('#block_liblinks_exam_papers').append("<div id='block_liblinks_exam_papers_content'>" +
+        html + "</div>");
+        $('#block_liblinks_exam_papers #loading-image-container').remove();
+    },
+
+    "getScans": function(data) {
+        var html = '<ul>';
+        if(data.scans.length == 0) {
+            html += '<li><i>No scanned items found</i></li>';
+        }
+        for(var i=0; i<data.scans.length; i++) {
+            var item = data.scans[i];
+            if(item.link) {
+                html += "<li><a href=\"" + item.link + "\" target=\"_blank\">" + item.title + "</a></li>";
+            } else {
+                html += "<li>" + item.title + "</li>";
+            }
+        }
+        html += '</ul>';
+        $('#block_liblinks_scans').append("<div id='block_liblinks_scans_content'>" +
+        html + "</div>");
+        $('#block_liblinks_scans #loading-image-container').remove();
+    }
+
+    
+    
+};
 </script>
 <style type="text/css">
 	body {
@@ -48,6 +138,25 @@
 		font-weight: normal;
 		font-size: 1.3em;
 	}
+	#block_liblinks_reading_list { display: none }
+    #block_liblinks_exam_papers  { display: none }
+    #block_liblinks_scans { display:none }
+    
+    #block_liblinks_reading_list ul,
+        #block_liblinks_exam_papers ul,
+        #block_liblinks_scans ul {
+            padding-left: 15px;
+            margin-left: 0;
+    }
+    
+    #block_liblinks_reading_list li,
+        #block_liblinks_exam_papers li,
+        #block_liblinks_scans li { 
+            list-style-image: url('images/bullet.gif');
+            padding-left: 0px;
+            margin-left: 0;
+            margin-bottom: 0.5em;
+    }
 </style>
 </head>
 <body>
@@ -58,9 +167,13 @@
 		<input id="classcode" type="text" name="classcode" size="5" />
 	</form>
 </div>
-<div id="results">
-<ul>
-</ul>
+<div id="links">
+<p><a id="block_liblinks_reading_list_link" href="#">Reading List</a></p>
+<div id="block_liblinks_reading_list" ></div>
+<p><a id="block_liblinks_exam_papers_link" href="#">Exam Papers</a></p>
+<div id="block_liblinks_exam_papers" ></div>
+<p><a id="block_liblinks_scans_link" href="#">Scanned Items</a></p>
+<div id="block_liblinks_scans"></div>
 </div>
 </body>
 </html>
